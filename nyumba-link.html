@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NyumbaLink (ToLet) - Find & Advertise Houses, Shops & Offices</title>
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=192&q=80">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        accent: {
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-800 bg-slate-50">
+
+    <!-- TOP NAVIGATION HEADER -->
+    <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <!-- Brand Logo[cite: 1] -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('tenant')">
+                <div class="bg-brand-500 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-house-signal text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-tight text-white">Nyumba<span class="text-brand-500">Link</span></span>
+                    <span class="text-xs bg-amber-500/20 text-amber-400 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30 ml-1.5">ToLet</span>
+                </div>
+            </div>
+
+            <!-- Role Switcher Toggle -->
+            <div class="bg-slate-800 p-1 rounded-xl border border-slate-700 flex items-center space-x-1 overflow-x-auto hide-scrollbar">
+                <button id="nav-tenant-btn" onclick="switchTab('tenant')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-brand-600 text-white shadow">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>Find</span>
+                </button>
+                <button id="nav-landlord-btn" onclick="switchTab('landlord')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-300 hover:text-white">
+                    <i class="fa-solid fa-building-user"></i>
+                    <span>Landlord</span>
+                </button>
+                <button id="nav-admin-btn" onclick="switchTab('admin')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-300 hover:text-white">
+                    <i class="fa-solid fa-gauge-high text-amber-400"></i>
+                    <span>Admin</span>
+                </button>
+            </div>
+
+            <!-- Right Controls / User State -->
+            <div class="hidden md:flex items-center space-x-4">
+                <div id="landlord-sub-badge" class="hidden items-center bg-slate-800 border border-slate-700 rounded-full px-3 py-1 text-xs text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-brand-500 mr-2 animate-pulse"></span>
+                    <span>Plan: <strong id="current-plan-display" class="text-brand-400">Standard Plan</strong></span>
+                </div>
+                <button onclick="openModal('sub-modal')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-crown text-slate-900"></i>
+                    <span>Upgrade</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= TENANT VIEW SECTION ================= -->
+        <section id="tenant-view" class="space-y-6">
+            
+            <!-- Hero Search & Filter Bar -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-6 space-y-4">
+                <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                    <!-- Search Input -->
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Search location (e.g. Westlands, Kilimani, CBD)..." class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                    </div>
+
+                    <!-- Category Selector -->
+                    <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+                        <button onclick="setCategoryFilter('all')" class="cat-btn active-cat px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-brand-600 text-white shadow-sm" data-cat="all">All Properties</button>
+                        <button onclick="setCategoryFilter('House')" class="cat-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="House">Houses & Apartments</button>
+                        <button onclick="setCategoryFilter('Shop')" class="cat-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="Shop">Shops / Retail</button>
+                        <button onclick="setCategoryFilter('Office')" class="cat-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="Office">Offices</button>
+                        <button onclick="setCategoryFilter('Land')" class="cat-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="Land">Plots / Land</button>
+                    </div>
+                </div>
+
+                <!-- Expanded Filters Drawer Toggle -->
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <button onclick="toggleFilterDrawer()" class="text-xs font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-600"></i>
+                        <span>Advanced Filters & Utilities</span>
+                        <i id="filter-arrow" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <span id="results-count" class="text-xs text-slate-500 font-medium">Showing all listings</span>
+                </div>
+
+                <!-- Collapsible Advanced Filters -->
+                <div id="filter-drawer" class="hidden pt-4 space-y-4 border-t border-slate-100 transition-all">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- Rent Slider -->
+                        <div>
+                            <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
+                                <span>Max Monthly Rent</span>
+                                <span id="rent-value" class="font-bold text-brand-700">KES 300,000</span>
+                            </div>
+                            <input type="range" id="rent-range" min="5000" max="300000" step="5000" value="300000" oninput="updateRentLabel(); applyFilters();" class="w-full accent-brand-600 cursor-pointer">
+                        </div>
+
+                        <!-- Bedrooms Filter -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Bedrooms</label>
+                            <select id="bedroom-filter" onchange="applyFilters()" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="any">Any Bedrooms</option>
+                                <option value="0">Bedsitter / Studio</option>
+                                <option value="1">1 Bedroom</option>
+                                <option value="2">2 Bedrooms</option>
+                                <option value="3">3+ Bedrooms</option>
+                            </select>
+                        </div>
+
+                        <!-- Utilities Checkboxes -->
+                        <div class="col-span-1 sm:col-span-2">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Included Utilities & Amenities</label>
+                            <div class="flex flex-wrap gap-2 pt-1">
+                                <label class="inline-flex items-center bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-xs cursor-pointer">
+                                    <input type="checkbox" value="Borehole Water" onchange="applyFilters()" class="utility-filter accent-brand-600 rounded mr-1.5"> Borehole Water
+                                </label>
+                                <label class="inline-flex items-center bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-xs cursor-pointer">
+                                    <input type="checkbox" value="Tokens" onchange="applyFilters()" class="utility-filter accent-brand-600 rounded mr-1.5"> Token Power
+                                </label>
+                                <label class="inline-flex items-center bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-xs cursor-pointer">
+                                    <input type="checkbox" value="24/7 Security" onchange="applyFilters()" class="utility-filter accent-brand-600 rounded mr-1.5"> 24/7 Security
+                                </label>
+                                <label class="inline-flex items-center bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-xs cursor-pointer">
+                                    <input type="checkbox" value="Parking" onchange="applyFilters()" class="utility-filter accent-brand-600 rounded mr-1.5"> Free Parking
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROPERTY LISTINGS GRID -->
+            <div id="listings-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic cards populated via JavaScript -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-12 bg-white rounded-2xl border border-slate-200">
+                <i class="fa-solid fa-house-circle-xmark text-4xl text-slate-300 mb-3"></i>
+                <h3 class="text-base font-bold text-slate-700">No properties matched your query</h3>
+                <p class="text-xs text-slate-500 mt-1">Try adjusting your filters or price slider.</p>
+                <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700">Reset Filters</button>
+            </div>
+        </section>
+
+        <!-- ================= LANDLORD PORTAL SECTION ================= -->
+        <section id="landlord-view" class="hidden space-y-6">
+            
+            <!-- Subscription / Quick Stats Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-brand-950 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-brand-500/10 rounded-full blur-2xl"></div>
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-amber-500 text-slate-950 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Landlord Hub</span>
+                            <span id="subscription-status-chip" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-medium px-2.5 py-0.5 rounded-full">Standard Tier Active</span>
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-bold">Manage Your Advertised Premises</h2>
+                        <p class="text-xs sm:text-sm text-slate-300">Update availability status (Vacant/Taken) and publish new premises instantly.</p>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="openModal('create-listing-modal')" class="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shadow-lg shadow-brand-500/30 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-plus"></i>
+                            <span>Create New Listing</span>
+                        </button>
+                        <button onclick="openModal('sub-modal')" class="bg-slate-700 hover:bg-slate-600 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition border border-slate-600 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                            <span>Subscription Plans</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-700/60">
+                    <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700/40">
+                        <p class="text-xs text-slate-400 font-medium">Total Listings</p>
+                        <p id="stat-total-listings" class="text-xl font-bold text-white mt-0.5">0</p>
+                    </div>
+                    <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700/40">
+                        <p class="text-xs text-slate-400 font-medium">Total Inquiries / Views</p>
+                        <p id="stat-total-views" class="text-xl font-bold text-emerald-400 mt-0.5">1,420</p>
+                    </div>
+                    <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700/40">
+                        <p class="text-xs text-slate-400 font-medium">Vacant Open</p>
+                        <p id="stat-vacant-listings" class="text-xl font-bold text-white mt-0.5">0</p>
+                    </div>
+                    <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700/40">
+                        <p class="text-xs text-slate-400 font-medium">Slot Capacity</p>
+                        <p id="stat-slot-capacity" class="text-xl font-bold text-amber-400 mt-0.5">2 / 5 Used</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Landlord Listings Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Your Property Ads & Availability Manager</h3>
+                        <p class="text-xs text-slate-500">Toggle premises between Vacant (Open) and Taken (Closed)</p>
+                    </div>
+                    <span class="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">Live Synchronized</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                            <tr>
+                                <th class="py-3 px-4">Property Premise</th>
+                                <th class="py-3 px-4">Category</th>
+                                <th class="py-3 px-4">Monthly Rent</th>
+                                <th class="py-3 px-4">Views</th>
+                                <th class="py-3 px-4">Availability</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="landlord-listings-table" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN CONTROL ROOM SECTION ================= -->
+        <section id="admin-view" class="hidden space-y-6">
+            <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="bg-amber-500 text-slate-950 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Super Admin</span>
+                    <h2 class="text-2xl font-bold mt-1">NyumbaLink Control Room</h2>
+                    <p class="text-xs text-slate-300">Manage subscriptions, landlord accounts, and publish community forums / announcements.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openModal('admin-forum-modal')" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-bullhorn"></i>
+                        <span>Post Announcement</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-semibold text-slate-500">Paid Subscriptions Database</p>
+                    <h3 class="text-2xl font-black text-brand-600 mt-1">KES 37,500</h3>
+                    <p class="text-[11px] text-slate-400 mt-1">15 Active Landlord Pro Subscriptions</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-semibold text-slate-500">Registered Landlords</p>
+                    <h3 class="text-2xl font-black text-slate-800 mt-1">24 Accounts</h3>
+                    <p class="text-[11px] text-emerald-600 mt-1"><i class="fa-solid fa-circle-check"></i> 22 Active, 2 Suspended</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-semibold text-slate-500">Total Premises Listed</p>
+                    <h3 class="text-2xl font-black text-amber-600 mt-1" id="admin-total-premises">5 Active</h3>
+                    <p class="text-[11px] text-slate-400 mt-1">System wide across Kenya</p>
+                </div>
+            </div>
+
+            <!-- Subscriptions Database & Account Management Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 sm:p-6 border-b border-slate-100">
+                    <h3 class="text-base font-bold text-slate-800">Landlord Database & Subscription Status</h3>
+                    <p class="text-xs text-slate-500">Activate or deactivate accounts and monitor billing cycles</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                            <tr>
+                                <th class="py-3 px-4">Landlord / Agency</th>
+                                <th class="py-3 px-4">Phone / Contact</th>
+                                <th class="py-3 px-4">Plan Tier</th>
+                                <th class="py-3 px-4">Billing Status</th>
+                                <th class="py-3 px-4">Account State</th>
+                                <th class="py-3 px-4 text-right">Admin Controls</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-bold text-slate-800">Samwel Kamau (Prime Agency)</td>
+                                <td class="py-3 px-4 text-slate-600">+254712345678</td>
+                                <td class="py-3 px-4 text-brand-700 font-semibold">Standard Pro (KES 1,500)</td>
+                                <td class="py-3 px-4"><span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Paid (Valid 24 Days)</span></td>
+                                <td class="py-3 px-4"><span id="acc-status-1" class="text-emerald-600 font-semibold text-xs">Active</span></td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="toggleAdminAccount(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium">Toggle Status</button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-bold text-slate-800">Grace Wanjiku (Karen Villas)</td>
+                                <td class="py-3 px-4 text-slate-600">+254722987654</td>
+                                <td class="py-3 px-4 text-amber-700 font-semibold">Agency Pro (KES 3,500)</td>
+                                <td class="py-3 px-4"><span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Paid (Valid 12 Days)</span></td>
+                                <td class="py-3 px-4"><span id="acc-status-2" class="text-emerald-600 font-semibold text-xs">Active</span></td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="toggleAdminAccount(2)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium">Toggle Status</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Forum / Community Announcements Board -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-comments text-brand-600"></i>
+                        <span>Community & Landlord Forum Feed</span>
+                    </h3>
+                    <span class="text-xs text-slate-400">Broadcasted to all users</span>
+                </div>
+                <div id="admin-forum-feed" class="space-y-3">
+                    <div class="bg-brand-50 border border-brand-200 p-4 rounded-xl space-y-1">
+                        <div class="flex justify-between items-center text-xs text-slate-500">
+                            <span class="font-bold text-brand-800">NyumbaLink Official Admin</span>
+                            <span>October 2026</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-900">New M-Pesa STK Integration Live!</h4>
+                        <p class="text-xs text-slate-600">All landlords can now renew subscriptions instantly via STK push. Reach out to support for bulk listings.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS SECTION ================= -->
+
+    <!-- 1. PROPERTY DETAILS MODAL -->
+    <div id="details-modal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden my-8 relative flex flex-col max-h-[90vh]">
+            <button onclick="closeModal('details-modal')" class="absolute top-3 right-3 bg-slate-900/70 hover:bg-slate-900 text-white rounded-full w-8 h-8 flex items-center justify-center z-10 transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="details-modal-body" class="overflow-y-auto p-6 space-y-6">
+                <!-- Dynamic Content injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. SCHEDULE VIEWING & TENANCY APPLICATION MODAL -->
+    <div id="booking-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-check text-brand-600"></i>
+                    <span>Book Premise & Schedule Viewing</span>
+                </h3>
+                <button onclick="closeModal('booking-modal')" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="booking-form" onsubmit="submitTenancyApplication(event)" class="space-y-3 text-xs sm:text-sm">
+                <input type="hidden" id="book-property-id">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Selected Premise</label>
+                    <input type="text" id="book-property-title" readonly class="w-full py-2 px-3 bg-slate-100 border border-slate-200 rounded-xl font-medium text-slate-600">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Your Full Name *</label>
+                        <input type="text" id="applicant-name" required placeholder="John Doe" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Phone Number *</label>
+                        <input type="tel" id="applicant-phone" required placeholder="0712345678" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Preferred Viewing Date *</label>
+                        <input type="date" id="viewing-date" required class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Viewing Time Slot *</label>
+                        <select id="viewing-time" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                            <option value="Morning (10:00 AM)">Morning (10:00 AM)</option>
+                            <option value="Afternoon (2:00 PM)">Afternoon (2:00 PM)</option>
+                            <option value="Late Evening (4:30 PM)">Late Evening (4:30 PM)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Employment / Income Source Reference</label>
+                    <input type="text" placeholder="e.g. Employed / Business Owner" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-[11px] text-amber-900">
+                    <i class="fa-solid fa-circle-info mr-1"></i> By submitting this application, the landlord will be notified instantly to confirm your viewing schedule and reserve the premise.
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition shadow-md">
+                    Confirm Viewing & Submit Application
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. CREATE NEW LISTING MODAL -->
+    <div id="create-listing-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 relative">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-square-plus text-brand-400"></i>
+                    <h3 class="text-base font-bold">Advertise New Premise</h3>
+                </div>
+                <button onclick="closeModal('create-listing-modal')" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="listing-form" onsubmit="handleCreateListing(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs sm:text-sm">
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Premise Title *</label>
+                    <input type="text" id="form-title" required placeholder="e.g. Executive 2 Bedroom Apartment" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Category *</label>
+                        <select id="form-category" required class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                            <option value="House">House / Apartment</option>
+                            <option value="Shop">Shop / Retail Store</option>
+                            <option value="Office">Office Space</option>
+                            <option value="Land">Land / Plot</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Rent (KES / mo) *</label>
+                        <input type="number" id="form-rent" required placeholder="35000" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Deposit (KES)</label>
+                        <input type="number" id="form-deposit" placeholder="35000" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Location / Neighborhood *</label>
+                        <input type="text" id="form-location" required placeholder="e.g. Kilimani" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Bedrooms</label>
+                        <select id="form-bedrooms" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                            <option value="0">Studio / Commercial</option>
+                            <option value="1">1 Bedroom</option>
+                            <option value="2">2 Bedrooms</option>
+                            <option value="3">3+ Bedrooms</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Phone Number *</label>
+                        <input type="tel" id="form-phone" required placeholder="0712345678" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">WhatsApp Number *</label>
+                        <input type="tel" id="form-whatsapp" required placeholder="254712345678" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('create-listing-modal')" class="px-4 py-2 text-slate-600 font-medium">Cancel</button>
+                    <button type="submit" class="px-6 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700">Publish Advert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. SUBSCRIPTIONS MODAL -->
+    <div id="sub-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-8 relative p-6">
+            <button onclick="closeModal('sub-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="text-center mb-6">
+                <span class="bg-amber-500 text-slate-950 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">NyumbaLink Plans</span>
+                <h2 class="text-2xl font-bold mt-2">Landlord Subscription Packages</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="border border-slate-200 rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-lg font-bold text-slate-800">Pay-Per-Listing</h4>
+                        <div class="my-3"><span class="text-2xl font-extrabold text-slate-900">KES 500</span><span class="text-xs text-slate-500"> / 30 Days</span></div>
+                    </div>
+                    <button onclick="openCheckout('Starter', 500)" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl text-xs">Select Plan</button>
+                </div>
+                <div class="border-2 border-brand-500 rounded-2xl p-5 flex flex-col justify-between bg-brand-50/30">
+                    <div>
+                        <h4 class="text-lg font-bold text-slate-800">Landlord Pro</h4>
+                        <div class="my-3"><span class="text-2xl font-extrabold text-slate-900">KES 1,500</span><span class="text-xs text-slate-500"> / Monthly</span></div>
+                    </div>
+                    <button onclick="openCheckout('Standard Plan', 1500)" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs shadow-md">Activate Standard</button>
+                </div>
+                <div class="border border-slate-200 rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-lg font-bold text-slate-800">Agency Unlimited</h4>
+                        <div class="my-3"><span class="text-2xl font-extrabold text-slate-900">KES 3,500</span><span class="text-xs text-slate-500"> / Monthly</span></div>
+                    </div>
+                    <button onclick="openCheckout('Agency Pro', 3500)" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl text-xs">Select Agency</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. CHECKOUT MODAL -->
+    <div id="checkout-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base font-bold text-slate-800">M-Pesa STK Checkout - <span id="checkout-plan-title">Standard</span></h3>
+                <button onclick="closeModal('checkout-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex justify-between items-center text-xs">
+                <span class="text-emerald-800 font-medium">Total Amount Due:</span>
+                <span id="checkout-amount" class="text-base font-extrabold text-emerald-900">KES 1,500</span>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">M-Pesa Phone Number</label>
+                <input type="tel" value="0712345678" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+            </div>
+            <button onclick="processSimulatedPayment()" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-lg">Authorize Payment via STK</button>
+        </div>
+    </div>
+
+    <!-- 6. ADMIN FORUM MODAL -->
+    <div id="admin-forum-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base font-bold text-slate-800">Post Community Announcement</h3>
+                <button onclick="closeModal('admin-forum-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Announcement Title</label>
+                    <input type="text" id="forum-title-input" placeholder="e.g. Verified Landlord Badge Update" class="w-full py-2 px-3 bg-slate-50 border rounded-lg text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Message Content</label>
+                    <textarea id="forum-content-input" rows="3" placeholder="Write bulletin details..." class="w-full py-2 px-3 bg-slate-50 border rounded-lg text-xs"></textarea>
+                </div>
+                <button onclick="postAnnouncement()" class="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold">Publish to Feed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT & PWA REGISTRATION ================= -->
+    <script>
+        let properties = [
+            {
+                id: 1,
+                title: "Modern 2 Bedroom Master Ensuite Apartment",
+                category: "House",
+                rent: 45000,
+                deposit: 45000,
+                location: "Westlands, Nairobi",
+                bedrooms: 2,
+                utilities: ["Borehole Water", "Tokens", "24/7 Security", "Parking"],
+                image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
+                phone: "+254712345678",
+                whatsapp: "254712345678",
+                views: 342,
+                isLandlordMine: true,
+                status: 'vacant', // vacant or taken
+                featured: true
+            },
+            {
+                id: 2,
+                title: "Prime Highway Commercial Retail Shop Space",
+                category: "Shop",
+                rent: 80000,
+                deposit: 160000,
+                location: "Kilimani, Yaya Centre Vicinity",
+                bedrooms: 0,
+                utilities: ["Borehole Water", "24/7 Security", "Parking"],
+                image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
+                phone: "+254722987654",
+                whatsapp: "254722987654",
+                views: 512,
+                isLandlordMine: false,
+                status: 'vacant',
+                featured: true
+            },
+            {
+                id: 3,
+                title: "Furnished Serviced Executive Office Suite",
+                category: "Office",
+                rent: 65000,
+                deposit: 65000,
+                location: "Upper Hill, Nairobi",
+                bedrooms: 0,
+                utilities: ["Tokens", "24/7 Security", "Parking"],
+                image: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80",
+                phone: "+254733112233",
+                whatsapp: "254733112233",
+                views: 189,
+                isLandlordMine: true,
+                status: 'taken', // Marked taken/closed
+                featured: false
+            }
+        ];
+
+        let selectedCategory = 'all';
+        let savedFavorites = new Set();
+        let currentSubscriptionPlan = "Standard Plan";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderListings();
+            renderLandlordTable();
+            updateLandlordStats();
+            registerServiceWorker();
+        });
+
+        function switchTab(tab) {
+            document.getElementById('tenant-view').classList.add('hidden');
+            document.getElementById('landlord-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
+            
+            document.getElementById('nav-tenant-btn').className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white";
+            document.getElementById('nav-landlord-btn').className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white";
+            document.getElementById('nav-admin-btn').className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white";
+
+            if (tab === 'tenant') {
+                document.getElementById('tenant-view').classList.remove('hidden');
+                document.getElementById('nav-tenant-btn').className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-600 text-white shadow";
+            } else if (tab === 'landlord') {
+                document.getElementById('landlord-view').classList.remove('hidden');
+                document.getElementById('nav-landlord-btn').className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-600 text-white shadow";
+            } else if (tab === 'admin') {
+                document.getElementById('admin-view').classList.remove('hidden');
+                document.getElementById('nav-admin-btn').className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-600 text-white shadow";
+            }
+        }
+
+        function toggleFilterDrawer() {
+            document.getElementById('filter-drawer').classList.toggle('hidden');
+            document.getElementById('filter-arrow').classList.toggle('rotate-180');
+        }
+
+        function updateRentLabel() {
+            const val = document.getElementById('rent-range').value;
+            document.getElementById('rent-value').innerText = `KES ${parseInt(val).toLocaleString()}`;
+        }
+
+        function setCategoryFilter(cat) {
+            selectedCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.dataset.cat === cat) {
+                    btn.className = "cat-btn active-cat px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-brand-600 text-white shadow-sm";
+                } else {
+                    btn.className = "cat-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200";
+                }
+            });
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const maxRent = parseInt(document.getElementById('rent-range').value);
+            const bedroomVal = document.getElementById('bedroom-filter').value;
+
+            const filtered = properties.filter(item => {
+                const matchesSearch = item.title.toLowerCase().includes(query) || item.location.toLowerCase().includes(query);
+                const matchesCat = (selectedCategory === 'all') || (item.category === selectedCategory);
+                const matchesRent = item.rent <= maxRent;
+                let matchesBeds = true;
+                if (bedroomVal !== 'any') {
+                    if (bedroomVal === '3') matchesBeds = item.bedrooms >= 3;
+                    else matchesBeds = item.bedrooms === parseInt(bedroomVal);
+                }
+                return matchesSearch && matchesCat && matchesRent && matchesBeds;
+            });
+            renderListings(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('rent-range').value = 300000;
+            document.getElementById('bedroom-filter').value = 'any';
+            updateRentLabel();
+            setCategoryFilter('all');
+        }
+
+        function renderListings(itemsToRender = properties) {
+            const grid = document.getElementById('listings-grid');
+            const emptyState = document.getElementById('empty-state');
+            grid.innerHTML = '';
+
+            if (itemsToRender.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            itemsToRender.forEach(item => {
+                const isVacant = item.status === 'vacant';
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between group";
+
+                card.innerHTML = `
+                    <div>
+                        <div class="relative h-48 w-full overflow-hidden bg-slate-100">
+                            <img src="${item.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            <div class="absolute top-3 left-3 flex gap-1.5">
+                                <span class="bg-slate-900/80 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg">${item.category}</span>
+                                <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase ${isVacant ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}">
+                                    ${isVacant ? 'Vacant / Open' : 'Taken / Closed'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <div class="flex justify-between items-baseline">
+                                <h4 class="text-lg font-extrabold text-brand-700">KES ${item.rent.toLocaleString()}<span class="text-xs text-slate-500"> / mo</span></h4>
+                                <span class="text-xs text-slate-500"><i class="fa-solid fa-location-dot text-brand-600 mr-1"></i>${item.location}</span>
+                            </div>
+                            <h3 class="text-sm font-bold text-slate-800 line-clamp-1">${item.title}</h3>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0 grid grid-cols-2 gap-2 mt-2">
+                        <button onclick="openBookingModal(${item.id})" ${!isVacant ? 'disabled' : ''} class="col-span-2 py-2 px-3 ${isVacant ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm">
+                            <i class="fa-solid fa-calendar-check"></i>
+                            <span>${isVacant ? 'Schedule Viewing & Apply' : 'Premise Currently Taken'}</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Booking & Tenancy Application Workflow
+        function openBookingModal(id) {
+            const item = properties.find(p => p.id === id);
+            if (!item || item.status !== 'vacant') return;
+            document.getElementById('book-property-id').value = item.id;
+            document.getElementById('book-property-title').value = `${item.title} (${item.location}) - KES ${item.rent.toLocaleString()}/mo`;
+            openModal('booking-modal');
+        }
+
+        function submitTenancyApplication(event) {
+            event.preventDefault();
+            const name = document.getElementById('applicant-name').value;
+            const date = document.getElementById('viewing-date').value;
+            const time = document.getElementById('viewing-time').value;
+
+            alert(`Application Successful! Hello ${name}, your viewing request for ${date} at ${time} has been sent to the landlord. You will receive an SMS confirmation shortly.`);
+            closeModal('booking-modal');
+            document.getElementById('booking-form').reset();
+        }
+
+        // Landlord Table & Status Toggle
+        function renderLandlordTable() {
+            const tableBody = document.getElementById('landlord-listings-table');
+            tableBody.innerHTML = '';
+            const myProps = properties.filter(p => p.isLandlordMine);
+
+            myProps.forEach(item => {
+                const isVacant = item.status === 'vacant';
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold text-slate-800">
+                        <div class="flex items-center gap-2">
+                            <img src="${item.image}" class="w-10 h-10 rounded-lg object-cover">
+                            <div>
+                                <div class="font-bold line-clamp-1">${item.title}</div>
+                                <div class="text-[10px] text-slate-400">${item.location}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">${item.category}</td>
+                    <td class="py-3 px-4 font-bold">KES ${item.rent.toLocaleString()}</td>
+                    <td class="py-3 px-4">${item.views}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-full ${isVacant ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+                            ${isVacant ? 'Vacant (Open)' : 'Taken (Closed)'}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="toggleListingStatus(${item.id})" class="px-3 py-1 bg-slate-800 text-white rounded text-xs font-medium hover:bg-slate-700">
+                            Toggle Status
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function toggleListingStatus(id) {
+            const item = properties.find(p => p.id === id);
+            if (item) {
+                item.status = item.status === 'vacant' ? 'taken' : 'vacant';
+                renderListings();
+                renderLandlordTable();
+                updateLandlordStats();
+            }
+        }
+
+        function updateLandlordStats() {
+            const myProps = properties.filter(p => p.isLandlordMine);
+            const vacantProps = myProps.filter(p => p.status === 'vacant');
+            document.getElementById('stat-total-listings').innerText = myProps.length;
+            document.getElementById('stat-vacant-listings').innerText = vacantProps.length;
+            document.getElementById('admin-total-premises').innerText = `${properties.length} Active`;
+        }
+
+        function handleCreateListing(event) {
+            event.preventDefault();
+            const title = document.getElementById('form-title').value;
+            const category = document.getElementById('form-category').value;
+            const rent = parseInt(document.getElementById('form-rent').value);
+            const deposit = parseInt(document.getElementById('form-deposit').value) || rent;
+            const location = document.getElementById('form-location').value;
+            const bedrooms = parseInt(document.getElementById('form-bedrooms').value);
+            const phone = document.getElementById('form-phone').value;
+            const whatsapp = document.getElementById('form-whatsapp').value;
+
+            const newProp = {
+                id: Date.now(),
+                title, category, rent, deposit, location, bedrooms,
+                utilities: ["Borehole Water", "Tokens"],
+                image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80",
+                phone, whatsapp, views: 1, isLandlordMine: true, status: 'vacant', featured: false
+            };
+
+            properties.unshift(newProp);
+            renderListings();
+            renderLandlordTable();
+            updateLandlordStats();
+            closeModal('create-listing-modal');
+            document.getElementById('listing-form').reset();
+            alert("Premise published successfully as Vacant.");
+        }
+
+        // Admin Account Toggle & Announcements
+        function toggleAdminAccount(id) {
+            const span = document.getElementById(`acc-status-${id}`);
+            if (span.innerText === 'Active') {
+                span.innerText = 'Suspended';
+                span.className = 'text-red-600 font-semibold text-xs';
+            } else {
+                span.innerText = 'Active';
+                span.className = 'text-emerald-600 font-semibold text-xs';
+            }
+        }
+
+        function postAnnouncement() {
+            const title = document.getElementById('forum-title-input').value;
+            const content = document.getElementById('forum-content-input').value;
+            if(!title || !content) return alert("Please fill out both fields.");
+
+            const feed = document.getElementById('admin-forum-feed');
+            const div = document.createElement('div');
+            div.className = "bg-brand-50 border border-brand-200 p-4 rounded-xl space-y-1";
+            div.innerHTML = `
+                <div class="flex justify-between items-center text-xs text-slate-500">
+                    <span class="font-bold text-brand-800">NyumbaLink Official Admin</span>
+                    <span>Just now</span>
+                </div>
+                <h4 class="font-bold text-sm text-slate-900">${title}</h4>
+                <p class="text-xs text-slate-600">${content}</p>
+            `;
+            feed.prepend(div);
+            closeModal('admin-forum-modal');
+            document.getElementById('forum-title-input').value = '';
+            document.getElementById('forum-content-input').value = '';
+            alert("Announcement posted successfully to community feed.");
+        }
+
+        function openCheckout(planName, price) {
+            currentSubscriptionPlan = planName;
+            document.getElementById('checkout-plan-title').innerText = planName;
+            document.getElementById('checkout-amount').innerText = `KES ${price.toLocaleString()}`;
+            closeModal('sub-modal');
+            openModal('checkout-modal');
+        }
+
+        function processSimulatedPayment() {
+            closeModal('checkout-modal');
+            document.getElementById('current-plan-display').innerText = currentSubscriptionPlan;
+            document.getElementById('subscription-status-chip').innerText = `${currentSubscriptionPlan} Active`;
+            alert(`Payment Authorized! Subscription upgraded to ${currentSubscriptionPlan}.`);
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // PWA Service Worker Registration
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').then(() => {
+                    console.log('NyumbaLink PWA ServiceWorker Registered Successfully');
+                }).catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
